@@ -1,46 +1,25 @@
-name: Compile Spark
+name: Build RestoreMy2FA
 
 on:
-  workflow_dispatch:
+  push:
+  pull_request:
 
 jobs:
-  windows:
-    name: run on windows
+  build:
     runs-on: windows-latest
+
     steps:
-    - uses: actions/checkout@v2
-    - uses: ilammy/msvc-dev-cmd@v1.4.1
-    - name: compile
-      run: | 
-        cl main.cpp /Fe:spark /std:c++latest
-    - name: run
-      run: |
-        spark.exe test.spark
-      shell: cmd
-    - name: upload executable
-      uses: actions/upload-artifact@v2
-      with:
-        name: windows
-        path: |
-          spark.exe
-  mac-and-ubuntu:
-    runs-on: ${{matrix.os}}
-    strategy:
-      matrix:
-        os: [macos-latest, ubuntu-latest]
-    name: ${{matrix.os}}
-    steps:
-      - uses: actions/checkout@v2
-      - name: compile
-        run: |
-          g++ -std=c++17 main.cpp -o spark
-      - name: run
-        run: |
-          ./spark test.spark
-        shell: bash
-      - name: upload executable
-        uses: actions/upload-artifact@v2
-        with:
-          name: ${{matrix.os}}
-          path: |
-            spark
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup NuGet
+        uses: NuGet/setup-nuget@v2
+
+      - name: Restore NuGet packages
+        run: nuget restore RestoreMy2FA/RestoreMy2FA.csproj
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Build solution
+        run: msbuild RestoreMy2FA/RestoreMy2FA.csproj /p:Configuration=Release
